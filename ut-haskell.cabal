@@ -2,7 +2,7 @@ Name:                ut-haskell
 Version:             0.1
 Synopsis:            Unquantifiable Treasures - Haskell Microservice
 Description:         Contains the budget logic
-License:             Apache License 2.0
+License:             GPL-3
 Author:              George Boyle
 Maintainer:          george@thebuds.net
 Stability:           Experimental
