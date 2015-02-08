@@ -1,12 +1,26 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Budget where
 
 type Date = (Int, Int, Int)
 type Envelope = String
 type Period = (Date, Date)
 
-data Demand = Demand Period Envelope Int deriving Show
-data Fill = Fill Envelope Date Int deriving Show
-data Income = Income Date Int
+data Demand = Demand
+    { demandPeriod :: Period
+    , demandEnvelope :: Envelope
+    , demandAmount :: Int
+    } deriving Show
+
+data Fill = Fill
+    { fillEnvelope :: Envelope
+    , fillDate :: Date
+    , fillAmount :: Int
+    } deriving Show
+
+data Income = Income
+    { incomeDate :: Date
+    , incomeAmount :: Int
+    } deriving Show
 
 demands :: [Demand]
 demands =
