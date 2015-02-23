@@ -10,7 +10,6 @@ import JSON
 import Snap.Core
 import Snap.Util.FileServe
 import Snap.Http.Server
-import Transport
 
 main :: IO ()
 main = quickHttpServe site

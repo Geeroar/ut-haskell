@@ -7,7 +7,6 @@ import Control.Monad
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Text hiding (map)
-import Transport
 
 instance FromJSON Date where
     parseJSON (Array d)  = Date <$>
