@@ -1,9 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Budget where
 
-type Date = (Int, Int, Int)
 type Envelope = String
-type Period = (Date, Date)
+
+data Date = Date Int Int Int deriving Show
+
+data Period = Period
+    { startDate :: Date
+    , endDate :: Date
+    } deriving Show
 
 data Demand = Demand
     { demandPeriod :: Period
@@ -22,32 +27,34 @@ data Income = Income
     , incomeAmount :: Int
     } deriving Show
 
-demands :: [Demand]
-demands =
-    [ Demand ((2014, 1, 1), (2014, 1, 10)) "Car" 200
-    , Demand ((2014, 1, 2), (2014, 1, 2)) "Bike" 100
-    , Demand ((2014, 1, 2), (2014, 1, 4)) "Bike" 500
-    , Demand ((2014, 1, 4), (2014, 1, 5)) "Car" 100
-    ]
+data BudgetRequest = BudgetRequest
+    { income :: [Income]
+    , demands :: [Demand]
+    , openingBalance :: Int
+    } deriving Show
 
-income :: [Income]
-income =
-    [ Income (2014, 1, 1) 1500
-    , Income (2014, 1, 30) 1500
-    ]
+data BudgetResponse = BudgetResponse
+    { fills :: [Fill]
+    , closingBalance :: Int
+    } deriving Show
 
 fill :: Demand -> Int -> Fill
-fill (Demand (s, _) e _) a = Fill e s a
+fill (Demand (Period s _) e _) a = Fill e s a
 
-getFillAmount :: Demand -> Int -> Int
-getFillAmount (Demand _ _ a) b = max 0 (min a b)
+toFillAmount :: Demand -> Int -> Int
+toFillAmount (Demand _ _ a) b = max 0 (min a b)
 
-budget :: [Income] -> [Demand] -> Int -> [Fill]
-budget _ [] _ = []
-budget i (x:xs) b
-            | a > 0     = fill x a : budget i xs (b - a)
-            | otherwise = budget i xs b
-            where a = getFillAmount x b
+toFills :: [Income] -> [Demand] -> Int -> ([Fill], Int)
+toFills _ [] b = ([], b)
+toFills i (d:ds) b
+            | a > 0     = (fill d a : fst x, snd x)
+            | otherwise = (fst y, snd y)
+            where a = toFillAmount d b
+                  x = toFills i ds (b - a)
+                  y = toFills i ds b
 
-runBudget :: Int -> [Fill]
-runBudget = budget income demands
+toBudgetResponse :: ([Fill], Int) -> BudgetResponse
+toBudgetResponse (f, b) = BudgetResponse f b
+
+budget :: BudgetRequest -> BudgetResponse
+budget (BudgetRequest i d b) = toBudgetResponse $ toFills i d b

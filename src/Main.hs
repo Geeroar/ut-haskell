@@ -10,6 +10,7 @@ import JSON
 import Snap.Core
 import Snap.Util.FileServe
 import Snap.Http.Server
+import Transport
 
 main :: IO ()
 main = quickHttpServe site
@@ -19,34 +20,36 @@ site =
     ifTop (writeBS "hello world") <|>
     route [ ("foo", writeBS "bar")
           , ("budget", writeBS "You can fuck off")
-          , ("budget/json", writeBS "{\"error\": \"You can fuck off\"}")
-          , ("budget/:balance", budgetHandler)
-          , ("budget/json/:balance", jsonHandler)
+          , ("budget/json", budgetHandler)
           , ("echo/:echoparam", echoHandler)
           ] <|>
     dir "static" (serveDirectory ".")
 
-jsonHandler :: Snap ()
-jsonHandler = do
-    param <- getParam "balance"
-    generalHandler param (Lz.toStrict . encode)
+responseIntercept :: Response -> Response
+responseIntercept = setContentType "application/json"
+
+badRequest :: Response -> Response
+badRequest = setResponseCode 400
 
 budgetHandler :: Snap ()
 budgetHandler = do
-    param <- getParam "balance"
-    generalHandler param (pack . show)
+    body <- readRequestBody 1000
+    modifyResponse responseIntercept
+    doResponse $ decodeBudgetRequest body
 
-generalHandler :: Maybe ByteString -> ([Fill] -> ByteString) -> Snap ()
-generalHandler param textTransform = do
-    case param of
-        Just param -> writeBS $ textTransform $ runBudget $ readIntParam param
-        Nothing -> redirect "/budget"
+decodeBudgetRequest :: Lz.ByteString -> Maybe BudgetRequest
+decodeBudgetRequest = decode
+
+doResponse :: Maybe BudgetRequest -> Snap ()
+doResponse r = do
+    case r of
+        Just r  -> writeLBS $ encode $ budget r
+        Nothing -> do
+            modifyResponse badRequest
+            writeLBS "{\"error\": \"You can fuck off\"}"
 
 echoHandler :: Snap ()
 echoHandler = do
     param <- getParam "echoparam"
     maybe (writeBS "must specify echo/param in URL")
           writeBS param
-
-readIntParam :: ByteString -> Int
-readIntParam x = read $ unpack x
