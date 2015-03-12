@@ -18,7 +18,7 @@ site :: Snap ()
 site =
     ifTop (writeBS "hello world") <|>
     route [ ("foo", writeBS "bar")
-          , ("budget", writeBS "You can fuck off")
+          , ("budget", writeBS "You can fook off")
           , ("budget/json", budgetHandler)
           , ("echo/:echoparam", echoHandler)
           ] <|>
