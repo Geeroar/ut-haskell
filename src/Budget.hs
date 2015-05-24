@@ -56,5 +56,8 @@ toFills i (d:ds) b
 toBudgetResponse :: ([Fill], Int) -> BudgetResponse
 toBudgetResponse (f, b) = BudgetResponse f b
 
+toBudgetResponseBalance :: BudgetResponse -> Int
+toBudgetResponseBalance (BudgetResponse _ b) = b
+
 budget :: BudgetRequest -> BudgetResponse
 budget (BudgetRequest i d b) = toBudgetResponse $ toFills i d b
