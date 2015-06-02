@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Types where
 
-import Control.Applicative ()
+import Control.Applicative
 import Control.Monad
 import Data.Aeson
-import Data.Aeson.Types ()
+import Data.Aeson.Types
 import Data.Text (splitOn, unpack)
 
 
