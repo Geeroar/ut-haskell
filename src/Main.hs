@@ -5,10 +5,10 @@ import Budget
 import Control.Applicative
 import Data.Aeson
 import qualified Data.ByteString.Lazy as Lz
-import JSON
 import Snap.Core
 import Snap.Util.FileServe
 import Snap.Http.Server
+import Types
 
 main :: IO ()
 main = quickHttpServe site

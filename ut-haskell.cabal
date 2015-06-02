@@ -33,7 +33,7 @@ Test-Suite ut-haskell-test
   hs-source-dirs:       src, tests
   type:                 detailed-0.9
   test-module:          BudgetTest
-  other-modules:        Budget
+  other-modules:        Budget, Types
   build-depends:
     base,
     Cabal >= 1.9.2

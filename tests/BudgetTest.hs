@@ -1,7 +1,8 @@
-module BudgetTest ( tests ) where
+module BudgetTest (tests) where
 
-import Budget
+import Budget (budget)
 import Distribution.TestSuite
+import Types
 
 budgetRequestWithIncome :: TestInstance
 budgetRequestWithIncome = buildTest result "income should contribute to balance"
