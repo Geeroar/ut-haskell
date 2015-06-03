@@ -11,6 +11,7 @@ cabal.sandbox.config
 cabal.config
 log/
 .ghci
+<<<<<<< HEAD
 
 
 
@@ -62,4 +63,4 @@ com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 
-
+*.swp

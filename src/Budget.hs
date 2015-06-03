@@ -1,60 +1,34 @@
-{-# LANGUAGE OverloadedStrings #-}
-module Budget where
+module Budget (budget) where
 
-type Envelope = String
+import Data.List (sort)
+import Types
 
-data Date = Date Int Int Int deriving Show
+toFills :: [Income] -> [Demand] -> Int -> Date -> ([Fill], Int)
+toFills inc dem bal curDate = do
+    case nextItem inc dem of
+        Nothing -> ([], bal)
+        Just item -> do
+            case item of
+                Left i -> toFills (tail inc) dem newBalance newDate
+                    where newBalance        = bal + incomeAmount i
+                          newDate           = incomeDate i
+                Right d -> (newFill : fst otherFills, remainingBalance)
+                    where amount            = max 0 $ min (demandAmount d) bal
+                          remainingBalance  = bal - amount
+                          newFill           = Fill (demandEnvelope d) curDate amount
+                          otherFills        = toFills inc (tail dem)
+                                                    remainingBalance curDate
 
-data Period = Period
-    { startDate :: Date
-    , endDate :: Date
-    } deriving Show
-
-data Demand = Demand
-    { demandPeriod :: Period
-    , demandEnvelope :: Envelope
-    , demandAmount :: Int
-    } deriving Show
-
-data Fill = Fill
-    { fillEnvelope :: Envelope
-    , fillDate :: Date
-    , fillAmount :: Int
-    } deriving Show
-
-data Income = Income
-    { incomeDate :: Date
-    , incomeAmount :: Int
-    } deriving Show
-
-data BudgetRequest = BudgetRequest
-    { income :: [Income]
-    , demands :: [Demand]
-    , openingBalance :: Int
-    } deriving Show
-
-data BudgetResponse = BudgetResponse
-    { fills :: [Fill]
-    , closingBalance :: Int
-    } deriving Show
-
-fill :: Demand -> Int -> Fill
-fill (Demand (Period s _) e _) a = Fill e s a
-
-toFillAmount :: Demand -> Int -> Int
-toFillAmount (Demand _ _ a) b = max 0 (min a b)
-
-toFills :: [Income] -> [Demand] -> Int -> ([Fill], Int)
-toFills _ [] b = ([], b)
-toFills i (d:ds) b
-            | a > 0     = (fill d a : fst x, snd x)
-            | otherwise = (fst y, snd y)
-            where a = toFillAmount d b
-                  x = toFills i ds (b - a)
-                  y = toFills i ds b
+nextItem :: [Income] -> [Demand] -> Maybe (Either Income Demand)
+nextItem [] [] = Nothing
+nextItem [] (d:_) = Just $ Right d
+nextItem (i:_) [] = Just $ Left i
+nextItem (i:_) (d:_)
+            | (incomeDate i) < (startDate $ demandPeriod d) = Just $ Left i
+            | otherwise = Just $ Right d
 
 toBudgetResponse :: ([Fill], Int) -> BudgetResponse
 toBudgetResponse (f, b) = BudgetResponse f b
 
 budget :: BudgetRequest -> BudgetResponse
-budget (BudgetRequest i d b) = toBudgetResponse $ toFills i d b
+budget (BudgetRequest i d b) = toBudgetResponse $ toFills (sort i) (sort d) b (Date 2015 1 1) -- TODO: Remove hardcoded date

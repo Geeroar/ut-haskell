@@ -4,12 +4,11 @@ module Main where
 import Budget
 import Control.Applicative
 import Data.Aeson
-import Data.ByteString.Char8
 import qualified Data.ByteString.Lazy as Lz
-import JSON
 import Snap.Core
 import Snap.Util.FileServe
 import Snap.Http.Server
+import Types
 
 main :: IO ()
 main = quickHttpServe site
@@ -40,8 +39,8 @@ decodeBudgetRequest :: Lz.ByteString -> Maybe BudgetRequest
 decodeBudgetRequest = decode
 
 doResponse :: Maybe BudgetRequest -> Snap ()
-doResponse r = do
-    case r of
+doResponse resp = do
+    case resp of
         Just r  -> writeLBS $ encode $ budget r
         Nothing -> do
             modifyResponse badRequest
