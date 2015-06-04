@@ -22,18 +22,17 @@ data Date = Date Int Int Int deriving Show
 instance Eq Date where
     (Date y1 m1 d1) == (Date y2 m2 d2) = y1 == y2 && m1 == m2 && d1 == d2
 
-instance Ord Date
-    where compare (Date y1 m1 d1) (Date y2 m2 d2)
+instance Ord Date where
+    compare (Date y1 m1 d1) (Date y2 m2 d2)
             | y1 == y2 && m1 == m2      = compare d1 d2
             | y1 == y2                  = compare m1 m2
             | otherwise                 = compare y1 y2
 
 instance FromJSON Date where
-    parseJSON (String s) = Date <$>
-                           (parseJSON $ Number $ y) <*>
-                           (parseJSON $ Number $ m) <*>
-                           (parseJSON $ Number $ d)
-                where (y:m:d:_) = map (read . unpack) $ splitOn "-" s
+    parseJSON (String s) = Date <$> y <*> m <*> d
+                where (y:m:d:_)         = map parseDateSegment splitDate
+                      parseDateSegment  = parseJSON . Number . read . unpack
+                      splitDate         = splitOn "-" s
     parseJSON _          = mzero
 
 instance ToJSON Date where
@@ -51,8 +50,8 @@ data Period = Period
 instance Eq Period where
     (Period s1 e1) == (Period s2 e2) = s1 == s2 && e1 == e2
 
-instance Ord Period
-    where compare (Period s1 e1) (Period s2 e2)
+instance Ord Period where
+    compare (Period s1 e1) (Period s2 e2)
             | s1 == s2  = compare e1 e2
             | otherwise = compare s1 s2
 
@@ -75,8 +74,8 @@ data Demand = Demand
     , demandAmount :: Int
     } deriving (Eq, Show)
 
-instance Ord Demand
-    where compare (Demand p1 _ _) (Demand p2 _ _)
+instance Ord Demand where
+    compare (Demand p1 _ _) (Demand p2 _ _)
             | p1 < p2   = LT
             | otherwise = GT
 
@@ -119,8 +118,8 @@ data Income = Income
     , incomeAmount :: Int
     } deriving (Eq, Show)
 
-instance Ord Income
-    where compare (Income d1 _) (Income d2 _)
+instance Ord Income where
+    compare (Income d1 _) (Income d2 _)
             | d1 < d2   = LT
             | otherwise = GT
 
