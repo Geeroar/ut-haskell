@@ -12,7 +12,7 @@ toFills inc dem bal curDate = do
                 Left i -> toFills (tail inc) dem newBalance newDate
                     where newBalance        = bal + incomeAmount i
                           newDate           = incomeDate i
-                Right d -> (newFill : fst otherFills, remainingBalance)
+                Right d -> (newFill : fst otherFills, snd otherFills)
                     where amount            = max 0 $ min (demandAmount d) bal
                           remainingBalance  = bal - amount
                           newFill           = Fill (demandEnvelope d) curDate amount
