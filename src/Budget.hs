@@ -4,31 +4,21 @@ import Data.List (sort)
 import Types
 
 toFills :: [Income] -> [Demand] -> Int -> Date -> ([Fill], Int)
-toFills inc dem bal curDate = do
-    case nextItem inc dem of
-        Nothing -> ([], bal)
-        Just item -> do
-            case item of
-                Left i -> toFills (tail inc) dem newBalance newDate
-                    where newBalance        = bal + incomeAmount i
-                          newDate           = incomeDate i
-                Right d -> (newFill : fst otherFills, snd otherFills)
-                    where amount            = max 0 $ min (demandAmount d) bal
-                          remainingBalance  = bal - amount
-                          newFill           = Fill (demandEnvelope d) curDate amount
-                          otherFills        = toFills inc (tail dem)
-                                                    remainingBalance curDate
-
-nextItem :: [Income] -> [Demand] -> Maybe (Either Income Demand)
-nextItem [] [] = Nothing
-nextItem [] (d:_) = Just $ Right d
-nextItem (i:_) [] = Just $ Left i
-nextItem (i:_) (d:_)
-            | (incomeDate i) < (startDate $ demandPeriod d) = Just $ Left i
-            | otherwise = Just $ Right d
-
-toBudgetResponse :: ([Fill], Int) -> BudgetResponse
-toBudgetResponse (f, b) = BudgetResponse f b
+toFills [] _ 0 _ = ([], 0)
+toFills [] [] bal _ = ([], bal)
+toFills (i:is) [] bal curDate = toFills is [] (bal + incomeAmount i) curDate
+toFills (i:is) dem 0 _ = toFills is laterDemands (incomeAmount i) (incomeDate i)
+        where laterDemands = filter (\d -> (startDate $ demandPeriod d) > (incomeDate i)) dem
+toFills inc (d:ds) bal curDate = (newFill : fst otherFills, snd otherFills)
+        where newFill           = Fill (demandEnvelope d) curDate amount
+              otherFills        = toFills inc remainingDemands remainingBalance curDate
+              amount            = max 0 $ min (demandAmount d) bal
+              partialDemand     = Demand (demandPeriod d) (demandEnvelope d)
+                                         (demandAmount d - amount)
+              remainingBalance  = bal - amount
+              remainingDemands  = if amount == (demandAmount d) then ds else partialDemand : ds
 
 budget :: BudgetRequest -> BudgetResponse
-budget (BudgetRequest i d b) = toBudgetResponse $ toFills (sort i) (sort d) b (Date 2015 1 1) -- TODO: Remove hardcoded date
+budget (BudgetRequest i d b) = toBudgetResponse $ toFills (sort i) (sort d) b startDate
+        where toBudgetResponse (f, b)   = BudgetResponse f b
+              startDate                 = Date 2015 1 1 -- TODO: Remove hardcoded data
