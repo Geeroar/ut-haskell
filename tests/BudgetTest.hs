@@ -3,11 +3,12 @@ module BudgetTest (tests) where
 import Budget (budget)
 import Distribution.TestSuite
 import Types
+import Util
 
 twoPartialFills :: TestInstance
 twoPartialFills = buildTest result "demand should be filled twice"
   where result
-         | closingBalance response /= 150 = Fail "closing balance should be 150"
+         | budgetClosingBalance response /= 150 = Fail "closing balance should be 150"
          | length fillList /= 2 = Fail "there should be two fills"
          | fillEnvelope firstFill /= "Gas" = Fail "the first fill should be for Gas"
          | fillAmount firstFill /= 100 = Fail "the first fill amount should be 100"
@@ -16,15 +17,16 @@ twoPartialFills = buildTest result "demand should be filled twice"
          | otherwise = Pass
         firstFill = head fillList
         secondFill = head $ tail fillList
-        fillList = fills response
-        response = budget request
+        fillList = budgetFills response
+        response = budget request "id"
         request = BudgetRequest
                     { income = [
-                        Income (Date 2015 1 2) 100,
-                        Income (Date 2015 1 4) 250
+                        Income (constructTime "2015" "01" "02") 100,
+                        Income (constructTime "2015" "01" "04") 250
                     ]
                     , demands = [
-                        Demand (Period (Date 2015 1 5) (Date 2015 1 5)) "Gas" 200
+                        Demand (Period (constructTime "2015" "01" "05")
+                                       (constructTime "2015" "01" "05")) "Gas" 200
                     ]
                     , openingBalance = 0
                     }
@@ -32,7 +34,7 @@ twoPartialFills = buildTest result "demand should be filled twice"
 multipleDemands :: TestInstance
 multipleDemands = buildTest result "balance should reduce properly"
   where result
-         | closingBalance response /= 50 = Fail "closing balance should be 50"
+         | budgetClosingBalance response /= 50 = Fail "closing balance should be 50"
          | length fillList /= 2 = Fail "there should be two fills"
          | fillEnvelope firstFill /= "Gas" = Fail "the first fill should be for Gas"
          | fillAmount firstFill /= 50 = Fail "the first fill amount should be 50"
@@ -41,13 +43,15 @@ multipleDemands = buildTest result "balance should reduce properly"
          | otherwise = Pass
         firstFill = head fillList
         secondFill = head $ tail fillList
-        fillList = fills response
-        response = budget request
+        fillList = budgetFills response
+        response = budget request "id"
         request = BudgetRequest
                     { income = []
                     , demands = [
-                        Demand (Period (Date 2015 1 5) (Date 2015 1 5)) "Gas" 50,
-                        Demand (Period (Date 2015 1 7) (Date 2015 1 7)) "Phone" 100
+                        Demand (Period (constructTime "2015" "01" "05")
+                                       (constructTime "2015" "01" "05")) "Gas" 50,
+                        Demand (Period (constructTime "2015" "01" "07")
+                                       (constructTime "2015" "01" "07")) "Phone" 100
                     ]
                     , openingBalance = 200
                     }
@@ -55,21 +59,23 @@ multipleDemands = buildTest result "balance should reduce properly"
 singleIncome :: TestInstance
 singleIncome = buildTest result "income should contribute to balance"
   where result
-         | closingBalance response /= 50 = Fail "closing balance should be 50"
+         | budgetClosingBalance response /= 50 = Fail "closing balance should be 50"
          | length fillList /= 1 = Fail "there should be one fill"
-         | fillDate firstFill /= Date 2015 1 2 = Fail "the fill date should be the income date"
+         | fillDate firstFill /= (constructTime "2015" "01" "2") =
+                                        Fail "the fill date should be the income date"
          | fillEnvelope firstFill /= "Gas" = Fail "the fill should be for Gas"
          | fillAmount firstFill /= 50 = Fail "the fill amount should be 50"
          | otherwise = Pass
         firstFill = head fillList
-        fillList = fills response
-        response = budget request
+        fillList = budgetFills response
+        response = budget request "id"
         request = BudgetRequest
                     { income = [
-                        Income (Date 2015 1 2) 100
+                        Income (constructTime "2015" "01" "02") 100
                     ]
                     , demands = [
-                        Demand (Period (Date 2015 1 5) (Date 2015 1 5)) "Gas" 50
+                        Demand (Period (constructTime "2015" "01" "05")
+                                       (constructTime "2015" "01" "05")) "Gas" 50
                     ]
                     , openingBalance = 0
                     }
@@ -77,17 +83,18 @@ singleIncome = buildTest result "income should contribute to balance"
 oneDemandWithBalance :: TestInstance
 oneDemandWithBalance = buildTest result "demand should pull from balance"
   where result
-         | closingBalance response /= 100 = Fail "closing balance should be 100"
+         | budgetClosingBalance response /= 100 = Fail "closing balance should be 100"
          | length fillList /= 1 = Fail "there should be one fill"
          | fillEnvelope firstFill /= "Gas" = Fail "the fill should be for Gas"
          | otherwise = Pass
         firstFill = head fillList
-        fillList = fills response
-        response = budget request
+        fillList = budgetFills response
+        response = budget request "id"
         request = BudgetRequest
                     { income = []
                     , demands = [
-                        Demand (Period (Date 2015 1 1) (Date 2015 1 1)) "Gas" 100
+                        Demand (Period (constructTime "2015" "01" "01")
+                                       (constructTime "2015" "01" "01")) "Gas" 100
                     ]
                     , openingBalance = 200
                     }
@@ -95,11 +102,11 @@ oneDemandWithBalance = buildTest result "demand should pull from balance"
 emptyBudgetRequest :: TestInstance
 emptyBudgetRequest = buildTest result "empty budget request should give empty response"
   where result
-         | closingBalance response /= 0 = Fail "closing balance should be 0"
+         | budgetClosingBalance response /= 0 = Fail "closing balance should be 0"
          | length fillList /= 0 = Fail "fills should be empty"
          | otherwise = Pass
-        fillList = fills response
-        response = budget request
+        fillList = budgetFills response
+        response = budget request "id"
         request = BudgetRequest { income = [], demands = [], openingBalance = 0 }
 
 

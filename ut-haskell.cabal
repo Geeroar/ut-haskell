@@ -11,17 +11,19 @@ Build-type:          Simple
 Cabal-version:       >=1.2
 
 Executable ut-haskell
-  hs-source-dirs: src
-  main-is: Main.hs
+  hs-source-dirs:       src
+  main-is:              Main.hs
   build-depends:
     aeson                     >= 0.9,
-    base                      >= 4     && < 5,
+    base                      >= 4.6   && < 5,
+    bson                      >= 0.3.1,
     bytestring                >= 0.9.1 && < 0.11,
     MonadCatchIO-transformers >= 0.2.1 && < 0.4,
     mtl                       >= 2     && < 3,
     snap-core                 >= 0.9   && < 0.10,
     snap-server               >= 0.9   && < 0.10,
     text                      >= 1.2,
+    time                      >= 1.5.0.1,
     mongoDB                   >= 2.0.5
 
   if impl(ghc >= 6.12.0)
@@ -34,7 +36,7 @@ Test-Suite ut-haskell-test
   hs-source-dirs:       src, tests
   type:                 detailed-0.9
   test-module:          BudgetTest
-  other-modules:        Budget, Types
+  other-modules:        Budget, Types, Util
   build-depends:
     base,
     Cabal >= 1.9.2

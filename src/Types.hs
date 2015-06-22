@@ -5,7 +5,9 @@ import Control.Applicative
 import Control.Monad
 import Data.Aeson
 import Data.Aeson.Types
-import Data.Text (splitOn, unpack)
+import Data.Time.Clock
+import Database.MongoDB
+import Util
 
 
 --
@@ -15,36 +17,11 @@ type Envelope = String
 
 
 --
--- Date
---
-data Date = Date Int Int Int deriving Show
-
-instance Eq Date where
-    (Date y1 m1 d1) == (Date y2 m2 d2) = y1 == y2 && m1 == m2 && d1 == d2
-
-instance Ord Date where
-    compare (Date y1 m1 d1) (Date y2 m2 d2)
-            | y1 == y2 && m1 == m2      = compare d1 d2
-            | y1 == y2                  = compare m1 m2
-            | otherwise                 = compare y1 y2
-
-instance FromJSON Date where
-    parseJSON (String s) = Date <$> y <*> m <*> d
-                where (y:m:d:_)         = map parseDateSegment splitDate
-                      parseDateSegment  = parseJSON . Number . read . unpack
-                      splitDate         = splitOn "-" s
-    parseJSON _          = mzero
-
-instance ToJSON Date where
-    toJSON (Date y m d) = toJSON $ (show y) ++ "-" ++ (show m) ++ "-" ++ (show d)
-
-
---
 -- Period
 --
 data Period = Period
-    { startDate :: Date
-    , endDate :: Date
+    { startDate :: UTCTime
+    , endDate :: UTCTime
     } deriving Show
 
 instance Eq Period where
@@ -56,10 +33,13 @@ instance Ord Period where
             | otherwise = compare s1 s2
 
 instance FromJSON Period where
-    parseJSON (Object p) = Period <$>
-                           p .: "start" <*>
-                           p .:? "end" .!= Date 0 0 0
+    parseJSON (Object p) = do 
+                            s <- liftM parseBudgetTime (p .: "start")
+                            e' <- p .:? "end"
+                            e <- return (parseBudgetTime <$> e') .!= s
+                            return $ Period s e
     parseJSON _          = mzero
+        
 
 instance ToJSON Period where
     toJSON (Period s e) = object ["start" .= s, "end" .= e]
@@ -94,27 +74,27 @@ instance ToJSON Demand where
 -- Fill
 --
 data Fill = Fill
-    { fillEnvelope :: Envelope
-    , fillDate :: Date
+    { fillDate :: UTCTime
+    , fillEnvelope :: Envelope
     , fillAmount :: Int
     } deriving (Eq, Show)
 
 instance FromJSON Fill where
     parseJSON (Object f) = Fill <$>
+                           liftM parseBudgetTime (f .: "date") <*>
                            f .: "envelope" <*>
-                           f .: "date" <*>
                            f .: "amount"
     parseJSON _          = mzero
 
 instance ToJSON Fill where
-    toJSON (Fill e d a) = object ["envelope" .= e, "date" .= d, "amount" .= a]
+    toJSON (Fill d e a) = object ["date" .= d, "envelope" .= e, "amount" .= a]
 
 
 --
 -- Income
 --
 data Income = Income
-    { incomeDate :: Date
+    { incomeDate :: UTCTime
     , incomeAmount :: Int
     } deriving (Eq, Show)
 
@@ -125,12 +105,37 @@ instance Ord Income where
 
 instance FromJSON Income where
     parseJSON (Object i) = Income <$>
-                           i .: "date" <*>
+                           liftM parseBudgetTime (i .: "date") <*>
                            i .: "amount"
     parseJSON _          = mzero
 
 instance ToJSON Income where
     toJSON (Income d a) = object ["date" .= d, "amount" .= a]
+
+
+--
+-- Budget
+--
+data Budget = Budget
+    { budgetId :: Maybe ObjectId
+    , budgetUserId :: String
+    , budgetIncome :: [Income]
+    , budgetDemands :: [Demand]
+    , budgetFills :: [Fill]
+    , budgetOpeningBalance :: Int
+    , budgetClosingBalance :: Int
+    } deriving Show
+
+instance ToJSON Budget where
+    toJSON (Budget bid uid i d f ob cb) = object
+        [ "id"                  .= (show <$> bid)
+        , "userId"              .= uid
+        , "income"              .= i
+        , "demands"             .= d
+        , "fills"               .= f
+        , "openingBalance"      .= ob
+        , "closingBalance"      .= cb
+        ]
 
 
 --
@@ -151,21 +156,3 @@ instance FromJSON BudgetRequest where
 
 instance ToJSON BudgetRequest where
     toJSON (BudgetRequest i d b) = object ["income" .= i, "demands" .= d, "balance" .= b]
-
-
---
--- BudgetResponse
---
-data BudgetResponse = BudgetResponse
-    { fills :: [Fill]
-    , closingBalance :: Int
-    } deriving Show
-
-instance FromJSON BudgetResponse where
-    parseJSON (Object r) = BudgetResponse <$>
-                           r .: "fills" <*>
-                           r .: "balance"
-    parseJSON _          = mzero
-
-instance ToJSON BudgetResponse where
-    toJSON (BudgetResponse f b) = object ["fills" .= f, "balance" .= b]

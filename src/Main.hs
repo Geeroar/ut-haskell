@@ -1,6 +1,6 @@
 module Main where
 
-import qualified Server as S
+import qualified Api.Server as S
 
 main :: IO ()
 main = S.main
