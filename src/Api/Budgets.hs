@@ -12,7 +12,7 @@ import Snap.Core
 createBudget :: String -> Snap ()
 createBudget uid = do
     modifyResponse responseIntercept
-    body <- readRequestBody 1000
+    body <- readRequestBody 5243000
     request <- return $ decodeBudgetRequest body
     case request of
         Just b  -> do
