@@ -8,7 +8,7 @@ import Snap.Core
 import Snap.Http.Server
 
 main :: IO ()
-main = serve defaultConfig
+main = serve =<< commandLineConfig emptyConfig
 
 serve :: Config Snap a -> IO ()
 serve config = httpServe config $ route
