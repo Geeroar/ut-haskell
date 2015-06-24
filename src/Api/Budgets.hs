@@ -4,7 +4,9 @@ module Api.Budgets where
 import Api.Error
 import Api.Util
 import Budget
+import Control.Monad.Trans (liftIO)
 import Data.Bson
+import Data.Time.Clock
 import Db.Repository
 import Snap.Core
 
@@ -16,7 +18,8 @@ createBudget uid = do
     request <- return $ decodeBudgetRequest body
     case request of
         Just b  -> do
-            b' <- return $ budget b uid
+            d <- liftIO getCurrentTime
+            b' <- return $ budget b uid d
             docId <- insertBudget b'
             doBudgetResponse $ Just $ attachBudgetId (typed docId) b'
         Nothing -> badRequest "Foooook"

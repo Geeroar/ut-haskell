@@ -11,7 +11,7 @@ import Snap.Core
 import Types
 
 attachBudgetId :: ObjectId -> Budget -> Budget
-attachBudgetId bid (Budget _ uid i d f ob cb) = Budget (Just bid) uid i d f ob cb
+attachBudgetId bid (Budget _ uid i d f ds ob cb) = Budget (Just bid) uid i d f ds ob cb
 
 decodeBudgetRequest :: Lz.ByteString -> Maybe BudgetRequest
 decodeBudgetRequest = decode

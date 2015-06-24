@@ -6,7 +6,7 @@ import Control.Monad
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Time.Clock
-import Database.MongoDB
+import Database.MongoDB (ObjectId)
 import Util
 
 
@@ -15,6 +15,14 @@ import Util
 --
 type Envelope = String
 
+
+--
+-- Demand Colour
+--
+data DemandColour = Red | Orange | Yellow | Green deriving (Eq, Read, Show)
+
+instance ToJSON DemandColour where
+    toJSON c = toJSON $ show c
 
 --
 -- Period
@@ -52,7 +60,10 @@ data Demand = Demand
     { demandPeriod :: Period
     , demandEnvelope :: Envelope
     , demandAmount :: Int
-    } deriving (Eq, Show)
+    } deriving Show
+
+instance Eq Demand where
+    (Demand p1 e1 _) == (Demand p2 e2 _) = p1 == p2 && e1 == e2
 
 instance Ord Demand where
     compare (Demand p1 _ _) (Demand p2 _ _)
@@ -71,11 +82,28 @@ instance ToJSON Demand where
 
 
 --
+-- Demand Summary
+--
+data DemandSummary = DemandSummary
+    { demandSummaryDemand :: Demand
+    , demandSummaryFillAmount :: Int
+    , demandSummaryColour :: DemandColour
+    } deriving (Eq, Show)
+
+instance ToJSON DemandSummary where
+    toJSON (DemandSummary d fa c) = object
+        [ "demand" .= d
+        , "fillAmount" .= fa
+        , "colour" .= c
+        ]
+
+
+--
 -- Fill
 --
 data Fill = Fill
     { fillDate :: UTCTime
-    , fillEnvelope :: Envelope
+    , fillDemand :: Demand
     , fillAmount :: Int
     } deriving (Eq, Show)
 
@@ -87,7 +115,12 @@ instance FromJSON Fill where
     parseJSON _          = mzero
 
 instance ToJSON Fill where
-    toJSON (Fill d e a) = object ["date" .= d, "envelope" .= e, "amount" .= a]
+    toJSON (Fill d dem a) = object
+        [ "date" .= d
+        , "envelope" .= (demandEnvelope dem)
+        , "demandPeriod" .= (demandPeriod dem)
+        , "amount" .= a
+        ]
 
 
 --
@@ -122,17 +155,19 @@ data Budget = Budget
     , budgetIncome :: [Income]
     , budgetDemands :: [Demand]
     , budgetFills :: [Fill]
+    , budgetDemandSummaries :: [DemandSummary]
     , budgetOpeningBalance :: Int
     , budgetClosingBalance :: Int
     } deriving Show
 
 instance ToJSON Budget where
-    toJSON (Budget bid uid i d f ob cb) = object
+    toJSON (Budget bid uid i d f s ob cb) = object
         [ "id"                  .= (show <$> bid)
         , "userId"              .= uid
         , "income"              .= i
         , "demands"             .= d
         , "fills"               .= f
+        , "demandSummaries"     .= s
         , "openingBalance"      .= ob
         , "closingBalance"      .= cb
         ]

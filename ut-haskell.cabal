@@ -35,8 +35,9 @@ Executable ut-haskell
 Test-Suite ut-haskell-test
   hs-source-dirs:       src, tests
   type:                 detailed-0.9
-  test-module:          BudgetTest
-  other-modules:        Budget, Types, Util
+  test-module:          MainTest
+  other-modules:        BudgetTest, TestUtil, TypesTest,
+                        Budget, Types, Util
   build-depends:
     base,
     Cabal >= 1.9.2

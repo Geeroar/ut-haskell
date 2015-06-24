@@ -1,7 +1,9 @@
-module BudgetTest (tests) where
+module BudgetTest (budgetTestInstances) where
 
 import Budget (budget)
+import Data.Time.Clock
 import Distribution.TestSuite
+import TestUtil
 import Types
 import Util
 
@@ -17,8 +19,9 @@ twoPartialFills = buildTest result "demand should be filled twice"
          | otherwise = Pass
         firstFill = head fillList
         secondFill = head $ tail fillList
+        fillEnvelope = (demandEnvelope . fillDemand)
         fillList = budgetFills response
-        response = budget request "id"
+        response = budget request "id" beginDate
         request = BudgetRequest
                     { income = [
                         Income (constructTime "2015" "01" "02") 100,
@@ -43,8 +46,9 @@ multipleDemands = buildTest result "balance should reduce properly"
          | otherwise = Pass
         firstFill = head fillList
         secondFill = head $ tail fillList
+        fillEnvelope = (demandEnvelope . fillDemand)
         fillList = budgetFills response
-        response = budget request "id"
+        response = budget request "id" beginDate
         request = BudgetRequest
                     { income = []
                     , demands = [
@@ -67,8 +71,9 @@ singleIncome = buildTest result "income should contribute to balance"
          | fillAmount firstFill /= 50 = Fail "the fill amount should be 50"
          | otherwise = Pass
         firstFill = head fillList
+        fillEnvelope = (demandEnvelope . fillDemand)
         fillList = budgetFills response
-        response = budget request "id"
+        response = budget request "id" beginDate
         request = BudgetRequest
                     { income = [
                         Income (constructTime "2015" "01" "02") 100
@@ -88,8 +93,9 @@ oneDemandWithBalance = buildTest result "demand should pull from balance"
          | fillEnvelope firstFill /= "Gas" = Fail "the fill should be for Gas"
          | otherwise = Pass
         firstFill = head fillList
+        fillEnvelope = (demandEnvelope . fillDemand)
         fillList = budgetFills response
-        response = budget request "id"
+        response = budget request "id" beginDate
         request = BudgetRequest
                     { income = []
                     , demands = [
@@ -106,24 +112,17 @@ emptyBudgetRequest = buildTest result "empty budget request should give empty re
          | length fillList /= 0 = Fail "fills should be empty"
          | otherwise = Pass
         fillList = budgetFills response
-        response = budget request "id"
+        response = budget request "id" beginDate
         request = BudgetRequest { income = [], demands = [], openingBalance = 0 }
 
+beginDate :: UTCTime
+beginDate = constructTime "2015" "01" "01"
 
-buildTest :: Result -> String -> TestInstance
-buildTest result label = TestInstance
-  { run = return $ Finished result
-  , name = label
-  , tags = []
-  , options = []
-  , setOption = \_ _ -> Right $ buildTest result label
-  }
-
-tests :: IO [Test]
-tests = return $ map Test
-            [ emptyBudgetRequest
-            , oneDemandWithBalance
-            , singleIncome
-            , multipleDemands
-            , twoPartialFills
-            ]
+budgetTestInstances :: [TestInstance]
+budgetTestInstances =
+        [ emptyBudgetRequest
+        , oneDemandWithBalance
+        , singleIncome
+        , multipleDemands
+        , twoPartialFills
+        ]
